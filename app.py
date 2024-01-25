@@ -30,20 +30,20 @@ def fetch_option_data(ticker_symbol):
     options_data = ticker.option_chain(first_exp_date)
 
     relevant_data = []
-
-    for df in [options_data.calls, options_data.puts]:
-        for _, row in df.iterrows():
-            option_details = {
-                "stockOption": ticker_symbol,
-                "optionType": "call" if df is options_data.calls else "put",
-                "strikePrice": row['strike'],
-                "expirationDate": first_exp_date,
-                "marketPrice": row['lastPrice'],
-                "impliedVolatility": row['impliedVolatility'], # Added implied volatility
-                "quantity": None,
-                "optionValue": None
-            }
-            relevant_data.append(option_details)
+    for exp_date in exp_dates:
+        for df in [options_data.calls, options_data.puts]:
+            for _, row in df.iterrows():
+                option_details = {
+                    "stockOption": ticker_symbol,
+                    "optionType": "call" if df is options_data.calls else "put",
+                    "strikePrice": row['strike'],
+                    "expirationDate": exp_date,
+                    "marketPrice": row['lastPrice'],
+                    "impliedVolatility": row['impliedVolatility'], # Added implied volatility
+                    "quantity": None,
+                    "optionValue": None
+                }
+                relevant_data.append(option_details)
 
     return relevant_data
 
