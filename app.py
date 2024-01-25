@@ -30,7 +30,10 @@ def fetch_option_data(ticker_symbol):
     options_data = ticker.option_chain(first_exp_date)
 
     relevant_data = []
-    for exp_date in exp_dates:
+    for i, exp_date in enumerate(exp_dates):
+        if i >= 50:
+            break
+
         for df in [options_data.calls, options_data.puts]:
             for _, row in df.iterrows():
                 option_details = {
@@ -39,7 +42,7 @@ def fetch_option_data(ticker_symbol):
                     "strikePrice": row['strike'],
                     "expirationDate": exp_date,
                     "marketPrice": row['lastPrice'],
-                    "impliedVolatility": row['impliedVolatility'], # Added implied volatility
+                    "impliedVolatility": row['impliedVolatility'],  # Added implied volatility
                     "quantity": None,
                     "optionValue": None
                 }
