@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from datetime import datetime, timedelta
 import yfinance as yf
 
 app = Flask(__name__)
@@ -23,17 +24,27 @@ def fetch_treasury_yield(maturity='10y'):
         return None
 
 
-def fetch_option_data(ticker_symbol):
+def fetch_option_data(ticker_symbol, start_date=None, end_date=None):
     ticker = yf.Ticker(ticker_symbol)
     exp_dates = ticker.options
-    first_exp_date = exp_dates[0]
-    options_data = ticker.option_chain(first_exp_date)
+
+    # Initialize start_date and end_date only if they are valid date strings
+    if start_date and start_date != 'undefined':
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    else:
+        start_date = datetime.today()
+
+    if end_date and end_date != 'undefined':
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    else:
+        end_date = start_date + timedelta(days=30)
+
+    # Filter expiration dates within the specified range
+    filtered_exp_dates = [date for date in exp_dates if start_date <= datetime.strptime(date, '%Y-%m-%d') <= end_date]
 
     relevant_data = []
-    for i, exp_date in enumerate(exp_dates):
-        if i >= 50:
-            break
-
+    for exp_date in filtered_exp_dates:
+        options_data = ticker.option_chain(exp_date)
         for df in [options_data.calls, options_data.puts]:
             for _, row in df.iterrows():
                 option_details = {
@@ -42,7 +53,7 @@ def fetch_option_data(ticker_symbol):
                     "strikePrice": row['strike'],
                     "expirationDate": exp_date,
                     "marketPrice": row['lastPrice'],
-                    "impliedVolatility": row['impliedVolatility'],  # Added implied volatility
+                    "impliedVolatility": row['impliedVolatility'],
                     "quantity": None,
                     "optionValue": None
                 }
@@ -52,7 +63,13 @@ def fetch_option_data(ticker_symbol):
 
 @app.route('/options/<ticker_symbol>')
 def options(ticker_symbol):
-    data = fetch_option_data(ticker_symbol.upper())
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    print("Start Date:", start_date)
+    print("End Date:", end_date)
+
+    data = fetch_option_data(ticker_symbol.upper(), start_date=start_date, end_date=end_date)
     return jsonify(data)
 
 @app.route('/treasury_yield')
